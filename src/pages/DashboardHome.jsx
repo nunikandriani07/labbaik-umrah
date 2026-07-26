@@ -3,17 +3,42 @@ import { useApp } from '../context/AppContext';
 import { DOA_LIST } from '../data/doaData';
 import { 
   BookOpen, Heart, Compass, Camera, 
-  CheckCircle2, ArrowRight, Play, Volume2, Sparkles, Clock, Calendar
+  CheckCircle2, ArrowRight, Play, Volume2, Sparkles, Clock, Calendar, Lock
 } from 'lucide-react';
 
 export default function DashboardHome({ onSelectTab }) {
-  const { user, countdownDays, checklistProgress, playAudioTrack, isPlayingAudio, currentAudio, bookmarks } = useApp();
+  const { 
+    user, countdownDays, checklistProgress, playAudioTrack, 
+    isPlayingAudio, currentAudio, bookmarks, isPremium, setUpgradeModalOpen 
+  } = useApp();
 
   const dailyTip = "Subuh dan jam 23:00 malam adalah waktu terbaik untuk Tawaf dengan tenang tanpa berdesakan. Pastikan tubuh tetap terhidrasi dengan minum 500ml Zamzam sebelum mulai.";
   const featuredDoa = DOA_LIST.find(d => d.id === 'doa-melihat-kabah') || DOA_LIST[0];
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
+      {/* Premium Upgrade Banner for Free Users */}
+      {!isPremium && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-900 via-[#0D4A28] to-amber-950 text-white border-2 border-[#C9A84C] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#C9A84C] text-[#0D4A28] flex items-center justify-center text-2xl font-bold shrink-0">
+              ✨
+            </div>
+            <div>
+              <h4 className="font-extrabold text-white text-base">Tingkatkan ke Paket Premium Access</h4>
+              <p className="text-xs text-amber-200">Buka kalkulator biaya, PDF itinerary, spot foto lengkap & mode offline penuh Rp49.000 sekali bayar.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setUpgradeModalOpen(true)}
+            className="px-6 py-3 rounded-2xl bg-[#C9A84C] hover:bg-[#e0be5e] text-[#0D4A28] font-black text-xs shadow-md transition hover:scale-105 shrink-0 flex items-center gap-1.5"
+          >
+            <Lock className="w-4 h-4" />
+            <span>Dapatkan Akses Premium (Rp49.000)</span>
+          </button>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="relative rounded-3xl bg-gradient-to-r from-[#0D4A28] via-[#1B6B3A] to-[#0D4A28] text-white p-6 sm:p-8 shadow-xl border border-[#C9A84C]/40 overflow-hidden bg-dark-islamic">
         <div className="relative z-10 max-w-2xl space-y-3">
