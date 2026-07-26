@@ -18,6 +18,8 @@ import TrackerPage from './pages/TrackerPage';
 import SettingsPage from './pages/SettingsPage';
 
 function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }) {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -48,12 +50,18 @@ function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }
         currentTab={activeTab}
         onSelectTab={onSelectTab}
         onLogout={onLogout}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto h-screen">
-        <Header currentTab={activeTab} onNavigateHome={onNavigateHome} />
-        <main className="p-6 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
+        <Header 
+          currentTab={activeTab} 
+          onNavigateHome={onNavigateHome} 
+          onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        />
+        <main className="p-4 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full mx-auto">
           {renderTabContent()}
         </main>
       </div>
