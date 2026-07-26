@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage({ onNavigate }) {
   const { loginUser, registerUser } = useApp();
@@ -8,6 +8,7 @@ export default function AuthPage({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -37,7 +38,6 @@ export default function AuthPage({ onNavigate }) {
 
   const handleGoogleAuth = async () => {
     setLoading(true);
-    // Instant demo OAuth login
     await loginUser('jamaah.google@gmail.com', 'demo12345');
     setLoading(false);
     onNavigate('dashboard');
@@ -170,18 +170,27 @@ export default function AuthPage({ onNavigate }) {
                 </div>
               </div>
 
+              {/* Password Field with Eye Toggle */}
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Kata Sandi</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
+                    className="w-full pl-10 pr-12 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
+                    title={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
