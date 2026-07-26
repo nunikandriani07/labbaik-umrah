@@ -1,8 +1,8 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Moon, Sun, Bell, User, Sparkles } from 'lucide-react';
+import { Moon, Sun, Menu } from 'lucide-react';
 
-export default function Header({ currentTab, onNavigateHome }) {
+export default function Header({ currentTab, onNavigateHome, onToggleMobileSidebar }) {
   const { user, nightMode, setNightMode, isPremium, countdownDays } = useApp();
 
   const getPageTitle = () => {
@@ -22,20 +22,31 @@ export default function Header({ currentTab, onNavigateHome }) {
   const { title, sub } = getPageTitle();
 
   return (
-    <header className="bg-white/90 backdrop-blur-md border-b border-[#C9A84C]/20 sticky top-0 z-20 px-6 py-4 flex items-center justify-between shadow-xs">
-      <div>
-        <h1 className="text-xl font-bold text-[#0D4A28] flex items-center gap-2">
-          <span>{title}</span>
-          {isPremium && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5E6C8] text-[#0D4A28] font-bold border border-[#C9A84C]">
-              Bismillah
-            </span>
-          )}
-        </h1>
-        <p className="text-xs text-slate-500 font-medium">{sub}</p>
+    <header className="bg-white/90 backdrop-blur-md border-b border-[#C9A84C]/20 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
+      <div className="flex items-center gap-3">
+        {/* Mobile Hamburger Menu Toggle Button */}
+        <button
+          onClick={onToggleMobileSidebar}
+          className="md:hidden p-2 rounded-xl bg-emerald-50 text-[#0D4A28] hover:bg-emerald-100 transition"
+          title="Buka Menu Sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div>
+          <h1 className="text-base sm:text-xl font-extrabold text-[#0D4A28] flex items-center gap-2">
+            <span>{title}</span>
+            {isPremium && (
+              <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#F5E6C8] text-[#0D4A28] font-bold border border-[#C9A84C]">
+                Bismillah
+              </span>
+            )}
+          </h1>
+          <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate max-w-[200px] sm:max-w-none">{sub}</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Countdown Pill */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FBF7F0] border border-[#C9A84C]/40 text-xs font-semibold text-[#0D4A28]">
           <span>🕋 H-{countdownDays} Berangkat</span>
@@ -53,8 +64,8 @@ export default function Header({ currentTab, onNavigateHome }) {
         </button>
 
         {/* Profile Card */}
-        <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
-          <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#0D4A28] flex items-center justify-center font-bold border border-[#1B6B3A]/30">
+        <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-slate-200">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-100 text-[#0D4A28] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#1B6B3A]/30">
             {user?.name ? user.name[0] : 'J'}
           </div>
           <div className="hidden md:block text-left">
