@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Calculator, CheckSquare, Calendar, Printer, Download, 
-  Plus, Trash2, ArrowRight, DollarSign, ShieldCheck, Sparkles, Clock, MapPin
+  Plus, Trash2, ArrowRight, DollarSign, ShieldCheck, Sparkles, Clock, MapPin, Lock
 } from 'lucide-react';
 
 export default function PerencanaanPage() {
-  const { budgetPlan, setBudgetPlan, checklist, toggleChecklist, checklistProgress } = useApp();
+  const { 
+    budgetPlan, setBudgetPlan, 
+    checklist, toggleChecklist, checklistProgress,
+    isPremium, setUpgradeModalOpen 
+  } = useApp();
 
   const [activeTab, setActiveTab] = useState('biaya'); // 'biaya', 'checklist', 'itinerary'
 
@@ -16,7 +20,6 @@ export default function PerencanaanPage() {
     const visaCost = 2800000;
     const vaccineCost = 350000;
     
-    // Hotel cost per night based on star rating
     const makkahNights = Math.ceil(budgetPlan.durationDays * 0.6);
     const madinahNights = budgetPlan.durationDays - makkahNights;
 
@@ -25,8 +28,8 @@ export default function PerencanaanPage() {
     const hotelMakkah = (makkahNights * ratePerNight) / (budgetPlan.paxCount >= 2 ? 2 : 1);
     const hotelMadinah = (madinahNights * ratePerNight) / (budgetPlan.paxCount >= 2 ? 2 : 1);
 
-    const busSholawat = 450000; // Local transport & Haramain train share
-    const foodCost = budgetPlan.durationDays * 250000; // IDR 250k/day
+    const busSholawat = 450000;
+    const foodCost = budgetPlan.durationDays * 250000;
     const souvenir = Number(budgetPlan.souvenirBudget) || 3000000;
 
     const totalPerPerson = flightCost + visaCost + vaccineCost + hotelMakkah + hotelMadinah + busSholawat + foodCost + souvenir;
@@ -45,6 +48,10 @@ export default function PerencanaanPage() {
 
   // Print Summary Handler
   const handlePrint = () => {
+    if (!isPremium) {
+      setUpgradeModalOpen(true);
+      return;
+    }
     window.print();
   };
 
@@ -95,6 +102,27 @@ export default function PerencanaanPage() {
       {/* TAB 1: ESTIMASI BIAYA CALCULATOR */}
       {activeTab === 'biaya' && (
         <div className="space-y-8">
+          {/* Premium Lock Banner if User is Free */}
+          {!isPremium && (
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-900 to-[#0D4A28] text-white border-2 border-[#C9A84C] shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#C9A84C] text-[#0D4A28] flex items-center justify-center text-xl font-bold shrink-0">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-white text-base">Fitur Kalkulator Biaya Terkunci (Versi Gratis)</h4>
+                  <p className="text-xs text-amber-200">Upgrade ke Premium Rp49.000 sekali bayar untuk menyesuaikan budget & export PDF.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setUpgradeModalOpen(true)}
+                className="px-6 py-3 rounded-2xl bg-[#C9A84C] hover:bg-[#e0be5e] text-[#0D4A28] font-black text-xs shadow-md transition hover:scale-105 shrink-0"
+              >
+                Buka Akses Premium (Rp49.000)
+              </button>
+            </div>
+          )}
+
           {/* Form & Output Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Input Form Column */}
@@ -191,13 +219,29 @@ export default function PerencanaanPage() {
                 onClick={handlePrint}
                 className="w-full py-3 rounded-xl bg-[#0D4A28] text-[#C9A84C] font-bold text-xs shadow-md hover:bg-[#1B6B3A] transition flex items-center justify-center gap-2"
               >
-                <Printer className="w-4 h-4" />
-                <span>Cetak / Export PDF Estimasi Biaya</span>
+                {isPremium ? <Printer className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                <span>{isPremium ? 'Cetak / Export PDF Estimasi Biaya' : 'Buka PDF Export (Membutuhkan Premium)'}</span>
               </button>
             </div>
 
             {/* Output Receipt Box (Printable) */}
-            <div id="printable-content" className="lg:col-span-7 bg-[#FBF7F0] p-6 sm:p-8 rounded-3xl border-2 border-[#C9A84C]/40 shadow-md space-y-6">
+            <div id="printable-content" className="lg:col-span-7 bg-[#FBF7F0] p-6 sm:p-8 rounded-3xl border-2 border-[#C9A84C]/40 shadow-md space-y-6 relative overflow-hidden">
+              {!isPremium && (
+                <div className="absolute inset-0 bg-[#FBF7F0]/80 backdrop-blur-xs flex items-center justify-center p-6 text-center z-10">
+                  <div className="bg-white p-6 rounded-3xl border border-[#C9A84C] shadow-xl max-w-sm space-y-3">
+                    <Lock className="w-8 h-8 text-[#C9A84C] mx-auto" />
+                    <h4 className="font-bold text-[#0D4A28] text-sm">Hasil Estimasi Detail Terkunci</h4>
+                    <p className="text-xs text-slate-500">Bayar sekali Rp49.000 untuk melihat & mendownload hasil rincian biaya.</p>
+                    <button
+                      onClick={() => setUpgradeModalOpen(true)}
+                      className="w-full py-2.5 rounded-xl bg-[#C9A84C] text-[#0D4A28] font-bold text-xs shadow-md"
+                    >
+                      Buka Akses Premium Sekarang
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between border-b border-[#C9A84C]/30 pb-4">
                 <div>
                   <span className="text-xs font-extrabold text-[#0D4A28] tracking-widest uppercase">LABBAIK ESTIMATOR</span>
@@ -341,7 +385,7 @@ export default function PerencanaanPage() {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}} // Handled by parent div
+                          onChange={() => {}}
                           className="w-5 h-5 rounded border-slate-300 text-[#1B6B3A] focus:ring-[#1B6B3A] mt-0.5"
                         />
                         <div className="flex-1">
@@ -372,8 +416,8 @@ export default function PerencanaanPage() {
               onClick={handlePrint}
               className="px-4 py-2 rounded-xl bg-[#1B6B3A] text-white font-bold text-xs shadow-md hover:bg-[#0D4A28] transition flex items-center gap-2 no-print"
             >
-              <Printer className="w-4 h-4" />
-              <span>Cetak Itinerary</span>
+              {isPremium ? <Printer className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+              <span>{isPremium ? 'Cetak Itinerary' : 'Buka Cetak (Premium)'}</span>
             </button>
           </div>
 
