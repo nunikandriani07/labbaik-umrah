@@ -1,23 +1,33 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export default function AuthPage({ onNavigate }) {
-  const { loginUser, registerUser, setUser } = useApp();
-  const [isRegister, setIsRegister] = useState(false);
+  const { loginUser, registerUser, resetPassword, setUser } = useApp();
+  const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [resetSuccessMessage, setResetSuccessMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage('');
+    setResetSuccessMessage('');
 
-    if (isRegister) {
+    if (mode === 'forgot') {
+      const res = await resetPassword(email);
+      setLoading(false);
+      if (res.success) {
+        setResetSuccessMessage(`Instruksi reset kata sandi telah dikirim ke email ${email}. Silakan periksa inbox atau folder spam Anda.`);
+      } else {
+        setErrorMessage(res.error || 'Gagal mengirim instruksi reset kata sandi.');
+      }
+    } else if (mode === 'register') {
       const res = await registerUser(name, email, password);
       setLoading(false);
       if (res.success) {
@@ -39,7 +49,6 @@ export default function AuthPage({ onNavigate }) {
   const handleGoogleAuth = () => {
     setLoading(true);
     setErrorMessage('');
-    // Instant Google Login without external broken redirect
     setTimeout(() => {
       const googleUser = {
         id: 'google-jamaah-' + Date.now(),
@@ -105,20 +114,42 @@ export default function AuthPage({ onNavigate }) {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-black text-[#0D4A28]">
-                  {isRegister ? 'Buat Akun Jamaah' : 'Selamat Datang Kembali'}
+                  {mode === 'forgot' 
+                    ? 'Lupa Kata Sandi' 
+                    : mode === 'register' 
+                      ? 'Buat Akun Jamaah' 
+                      : 'Selamat Datang Kembali'}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  {isRegister ? 'Daftar gratis untuk mulai merencanakan umroh' : 'Masuk untuk mengakses panduan & simpanan doa'}
+                  {mode === 'forgot'
+                    ? 'Masukkan email untuk menerima tautan pemulihan kata sandi'
+                    : mode === 'register' 
+                      ? 'Daftar gratis untuk mulai merencanakan umroh' 
+                      : 'Masuk untuk mengakses panduan & simpanan doa'}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => { setIsRegister(!isRegister); setErrorMessage(''); }}
-                className="text-xs font-bold text-[#1B6B3A] hover:underline"
-              >
-                {isRegister ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
-              </button>
+              {mode === 'forgot' ? (
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setErrorMessage(''); setResetSuccessMessage(''); }}
+                  className="text-xs font-bold text-[#1B6B3A] hover:underline"
+                >
+                  Kembali ke Masuk
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { 
+                    setMode(mode === 'register' ? 'login' : 'register'); 
+                    setErrorMessage(''); 
+                    setResetSuccessMessage(''); 
+                  }}
+                  className="text-xs font-bold text-[#1B6B3A] hover:underline"
+                >
+                  {mode === 'register' ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
+                </button>
+              )}
             </div>
 
             {errorMessage && (
@@ -128,34 +159,45 @@ export default function AuthPage({ onNavigate }) {
               </div>
             )}
 
-            {/* Google OAuth Button */}
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              disabled={loading}
-              className="w-full py-3.5 rounded-2xl bg-white border border-slate-200 hover:border-[#C9A84C] font-bold text-xs text-slate-700 shadow-xs flex items-center justify-center gap-3 transition hover:scale-[1.01]"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#1B6B3A]" />
-              ) : (
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-              )}
-              <span>Lanjutkan dengan Google</span>
-            </button>
+            {resetSuccessMessage && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-900 font-bold flex items-start gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-[#1B6B3A] shrink-0 mt-0.5" />
+                <span>{resetSuccessMessage}</span>
+              </div>
+            )}
 
-            <div className="relative text-center my-4">
-              <span className="bg-[#FBF7F0] px-3 text-[11px] text-slate-400 font-semibold relative z-10">atau gunakan email</span>
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200"></div>
-            </div>
+            {/* Google OAuth Button (Shown only on login / register) */}
+            {mode !== 'forgot' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleGoogleAuth}
+                  disabled={loading}
+                  className="w-full py-3.5 rounded-2xl bg-white border border-slate-200 hover:border-[#C9A84C] font-bold text-xs text-slate-700 shadow-xs flex items-center justify-center gap-3 transition hover:scale-[1.01]"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1B6B3A]" />
+                  ) : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                  )}
+                  <span>Lanjutkan dengan Google</span>
+                </button>
+
+                <div className="relative text-center my-4">
+                  <span className="bg-[#FBF7F0] px-3 text-[11px] text-slate-400 font-semibold relative z-10">atau gunakan email</span>
+                  <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200"></div>
+                </div>
+              </>
+            )}
 
             {/* Email Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isRegister && (
+              {mode === 'register' && (
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Nama Lengkap Jamaah</label>
                   <div className="relative">
@@ -173,7 +215,7 @@ export default function AuthPage({ onNavigate }) {
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Alamat Email</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Alamat Email Jamaah</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -187,29 +229,42 @@ export default function AuthPage({ onNavigate }) {
                 </div>
               </div>
 
-              {/* Password Field with Eye Toggle */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Kata Sandi</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-12 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
-                    title={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              {/* Password Field (Hidden during Forgot Password) */}
+              {mode !== 'forgot' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">Kata Sandi</label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => { setMode('forgot'); setErrorMessage(''); setResetSuccessMessage(''); }}
+                        className="text-[11px] font-bold text-[#1B6B3A] hover:underline"
+                      >
+                        Lupa Kata Sandi?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-12 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
+                      title={showPassword ? 'Sembunyikan Kata Sandi' : 'Tampilkan Kata Sandi'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
@@ -217,7 +272,13 @@ export default function AuthPage({ onNavigate }) {
                 className="w-full py-3.5 rounded-2xl bg-[#1B6B3A] hover:bg-[#0D4A28] text-[#C9A84C] font-bold text-sm shadow-md border border-[#C9A84C]/40 transition hover:scale-[1.01] flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin text-[#C9A84C]" /> : null}
-                <span>{isRegister ? 'Mulai Persiapan — Gratis' : 'Masuk ke Aplikasi'}</span>
+                <span>
+                  {mode === 'forgot'
+                    ? 'Kirim Instruksi Reset 📩'
+                    : mode === 'register' 
+                      ? 'Mulai Persiapan — Gratis' 
+                      : 'Masuk ke Aplikasi'}
+                </span>
               </button>
             </form>
           </div>
