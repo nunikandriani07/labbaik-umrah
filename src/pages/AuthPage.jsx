@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../services/supabaseClient';
 import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage({ onNavigate }) {
@@ -31,16 +32,25 @@ export default function AuthPage({ onNavigate }) {
       if (res.success) {
         onNavigate('dashboard');
       } else {
-        setErrorMessage(res.error || 'Gagal masuk. Periksa email & kata sandi.');
+        setErrorMessage(res.error || 'Email atau kata sandi yang Anda masukkan salah.');
       }
     }
   };
 
   const handleGoogleAuth = async () => {
     setLoading(true);
-    await loginUser('jamaah.google@gmail.com', 'demo12345');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) {
+        setErrorMessage('Gagal menghubungkan Google Auth: ' + error.message);
+      }
+    } catch (e) {
+      setErrorMessage('Google OAuth tidak dikonfigurasi di Supabase.');
+    }
     setLoading(false);
-    onNavigate('dashboard');
   };
 
   return (
@@ -111,8 +121,9 @@ export default function AuthPage({ onNavigate }) {
             </div>
 
             {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-semibold">
-                ⚠️ {errorMessage}
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-xs text-rose-800 font-bold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{errorMessage}</span>
               </div>
             )}
 
