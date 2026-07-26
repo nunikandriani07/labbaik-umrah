@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-arabic {
+    font-family: 'Amiri', 'Scheherazade New', serif;
+  }
+  .font-sans {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FBF7F0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C9A84C;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1B6B3A;
+}
+
+/* Geometric background patterns */
+.bg-islamic-pattern {
+  background-color: #FBF7F0;
+  background-image: radial-gradient(#C9A84C 0.75px, transparent 0.75px), radial-gradient(#1B6B3A 0.75px, #FBF7F0 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+  background-opacity: 0.15;
+}
+
+.bg-dark-islamic {
+  background-color: #0D4A28;
+  background-image: radial-gradient(rgba(201, 168, 76, 0.25) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow & Shimmer utilities */
+.gold-glow {
+  box-shadow: 0 0 25px -5px rgba(201, 168, 76, 0.35);
+}
+
+.green-glow {
+  box-shadow: 0 0 25px -5px rgba(27, 107, 58, 0.3);
+}
+
+/* Print CSS for Cost Calculator & Itinerary Export */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-content, #printable-content * {
+    visibility: visible;
+  }
+  #printable-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
