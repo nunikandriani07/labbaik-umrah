@@ -58,6 +58,13 @@ export const AppProvider = ({ children }) => {
 
   const [session, setSession] = useState(null);
 
+  // Recovery token check from URL hash or query params
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    return window.location.hash.includes('type=recovery') || 
+           window.location.search.includes('type=recovery') ||
+           window.location.hash.includes('access_token=');
+  });
+
   // Premium status (Defaults to false for free users)
   const [isPremium, setIsPremium] = useState(() => {
     return localStorage.getItem('labbaik_is_premium') === 'true';
@@ -121,7 +128,10 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
       setSession(session);
       if (session?.user) {
         const u = {
@@ -132,7 +142,7 @@ export const AppProvider = ({ children }) => {
         };
         setUser(u);
         localStorage.setItem('labbaik_user', JSON.stringify(u));
-      } else if (_event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         localStorage.removeItem('labbaik_user');
       }
@@ -223,6 +233,21 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const updateUserPassword = async (newPassword) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      setIsPasswordRecovery(false);
+      // Clear recovery hash from URL
+      window.history.replaceState(null, '', window.location.pathname);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: 'Gagal memperbarui kata sandi. Silakan coba lagi.' };
+    }
+  };
+
   const logoutUser = async () => {
     try {
       await supabase.auth.signOut();
@@ -295,7 +320,8 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       user, setUser,
       session,
-      loginUser, registerUser, resetPassword, logoutUser,
+      isPasswordRecovery, setIsPasswordRecovery,
+      loginUser, registerUser, resetPassword, updateUserPassword, logoutUser,
       isPremium, setIsPremium, unlockPremium,
       upgradeModalOpen, setUpgradeModalOpen,
       departureDate, setDepartureDate,
