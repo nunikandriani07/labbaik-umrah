@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
@@ -64,9 +64,9 @@ function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }
 }
 
 function MainApp() {
-  const [currentView, setCurrentView] = useState('landing'); // 'landing', 'auth', 'dashboard-*'
+  const [currentView, setCurrentView] = useState('landing');
   const [dashboardTab, setDashboardTab] = useState('dashboard');
-  const { setUser } = useApp();
+  const { user, logoutUser } = useApp();
 
   const handleNavigate = (view) => {
     if (view.startsWith('dashboard-')) {
@@ -81,13 +81,13 @@ function MainApp() {
     }
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    await logoutUser();
     setCurrentView('landing');
   };
 
   if (currentView === 'auth') {
-    return <AuthPage onNavigate={handleNavigate} onLoginSuccess={(u) => setUser(u)} />;
+    return <AuthPage onNavigate={handleNavigate} />;
   }
 
   if (currentView === 'dashboard') {
