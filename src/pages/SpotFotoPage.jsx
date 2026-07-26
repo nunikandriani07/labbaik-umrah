@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
 import { SPOT_FOTO_LIST } from '../data/spotFotoData';
 import { 
   Camera, MapPin, Clock, Star, ExternalLink, 
-  X, AlertTriangle, Sparkles, Filter, SlidersHorizontal
+  X, AlertTriangle, Sparkles, Filter, SlidersHorizontal, Lock
 } from 'lucide-react';
 
 export default function SpotFotoPage() {
+  const { isPremium, setUpgradeModalOpen } = useApp();
   const [selectedCity, setSelectedCity] = useState('all'); // 'all', 'makkah', 'madinah'
-  const [selectedSpot, setSelectedSpot] = useState(null); // Modal detail spot
+  const [selectedSpot, setSelectedSpot] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredSpots = SPOT_FOTO_LIST.filter((spot) => {
@@ -16,6 +18,14 @@ export default function SpotFotoPage() {
                           spot.location.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCity && matchesSearch;
   });
+
+  const handleSpotClick = (spot, idx) => {
+    if (!isPremium && idx >= 5) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+    setSelectedSpot(spot);
+  };
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
@@ -76,58 +86,73 @@ export default function SpotFotoPage() {
 
       {/* Photo Spot Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredSpots.map((spot) => (
-          <div
-            key={spot.id}
-            onClick={() => setSelectedSpot(spot)}
-            className="bg-white rounded-3xl border border-slate-200 shadow-xs hover:shadow-lg hover:border-[#C9A84C] transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between group"
-          >
-            {/* Image Thumbnail */}
-            <div className="relative h-48 overflow-hidden bg-slate-100">
-              <img
-                src={spot.image}
-                alt={spot.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute top-3 left-3 bg-[#0D4A28]/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md uppercase tracking-wider border border-[#C9A84C]/40">
-                {spot.city}
-              </div>
-              <div className="absolute top-3 right-3 bg-amber-400 text-[#0D4A28] text-xs font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
-                <Star className="w-3 h-3 fill-current" />
-                <span>{spot.rating}</span>
-              </div>
-            </div>
+        {filteredSpots.map((spot, idx) => {
+          const isLocked = !isPremium && idx >= 5;
+          return (
+            <div
+              key={spot.id}
+              onClick={() => handleSpotClick(spot, idx)}
+              className={`bg-white rounded-3xl border border-slate-200 shadow-xs transition-all duration-300 overflow-hidden cursor-pointer flex flex-col justify-between group relative ${
+                isLocked ? 'opacity-85' : 'hover:shadow-lg hover:border-[#C9A84C]'
+              }`}
+            >
+              {isLocked && (
+                <div className="absolute inset-0 bg-[#0D4A28]/40 backdrop-blur-xs z-10 flex flex-col items-center justify-center p-4 text-center text-white space-y-2">
+                  <div className="w-10 h-10 rounded-2xl bg-[#C9A84C] text-[#0D4A28] flex items-center justify-center font-bold">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-extrabold text-amber-300">Spot Foto Premium #{idx + 1}</span>
+                  <p className="text-[11px] text-emerald-100">Buka 15+ spot foto lengkap dengan Upgrade Rp49.000</p>
+                </div>
+              )}
 
-            {/* Content */}
-            <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-base group-hover:text-[#0D4A28] transition-colors">
-                  {spot.title}
-                </h3>
-                
-                <div className="space-y-1.5 mt-2">
-                  <div className="flex items-center gap-2 text-xs text-[#1B6B3A] font-semibold">
-                    <Clock className="w-3.5 h-3.5 shrink-0 text-[#C9A84C]" />
-                    <span className="truncate">{spot.bestTime}</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs text-slate-500">
-                    <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" />
-                    <span className="line-clamp-1">{spot.location}</span>
-                  </div>
+              {/* Image Thumbnail */}
+              <div className="relative h-48 overflow-hidden bg-slate-100">
+                <img
+                  src={spot.image}
+                  alt={spot.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-3 left-3 bg-[#0D4A28]/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md uppercase tracking-wider border border-[#C9A84C]/40">
+                  {spot.city}
+                </div>
+                <div className="absolute top-3 right-3 bg-amber-400 text-[#0D4A28] text-xs font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                  <Star className="w-3 h-3 fill-current" />
+                  <span>{spot.rating}</span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  {spot.tags.slice(0, 2).map((t, idx) => <span key={idx}>{t}</span>)}
+              {/* Content */}
+              <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base group-hover:text-[#0D4A28] transition-colors">
+                    {spot.title}
+                  </h3>
+                  
+                  <div className="space-y-1.5 mt-2">
+                    <div className="flex items-center gap-2 text-xs text-[#1B6B3A] font-semibold">
+                      <Clock className="w-3.5 h-3.5 shrink-0 text-[#C9A84C]" />
+                      <span className="truncate">{spot.bestTime}</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-xs text-slate-500">
+                      <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" />
+                      <span className="line-clamp-1">{spot.location}</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs font-bold text-[#1B6B3A] group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                  Detail Spot →
-                </span>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                    {spot.tags.slice(0, 2).map((t, index) => <span key={index}>{t}</span>)}
+                  </div>
+                  <span className="text-xs font-bold text-[#1B6B3A] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    Detail Spot →
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Detail Spot Modal */}
@@ -203,8 +228,8 @@ export default function SpotFotoPage() {
               {/* Warnings */}
               {selectedSpot.warnings && selectedSpot.warnings.length > 0 && (
                 <div className="space-y-1 pt-1">
-                  {selectedSpot.warnings.map((w, idx) => (
-                    <p key={idx} className="text-rose-700 font-semibold">{w}</p>
+                  {selectedSpot.warnings.map((w, index) => (
+                    <p key={index} className="text-rose-700 font-semibold">{w}</p>
                   ))}
                 </div>
               )}
