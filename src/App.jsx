@@ -75,17 +75,17 @@ function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }
 function MainApp() {
   const [currentView, setCurrentView] = useState('landing');
   const [dashboardTab, setDashboardTab] = useState('dashboard');
-  const { user, logoutUser, upgradeModalOpen, setUpgradeModalOpen } = useApp();
+  const { user, logoutUser, upgradeModalOpen, setUpgradeModalOpen, isPasswordRecovery } = useApp();
 
   const handleNavigate = (view) => {
     if (view === 'auth') {
-      if (user) {
+      if (user && !isPasswordRecovery) {
         setCurrentView('dashboard');
       } else {
         setCurrentView('auth');
       }
     } else if (view.startsWith('dashboard-')) {
-      if (!user) {
+      if (!user && !isPasswordRecovery) {
         setCurrentView('auth');
       } else {
         const tab = view.replace('dashboard-', '');
@@ -93,7 +93,7 @@ function MainApp() {
         setCurrentView('dashboard');
       }
     } else if (view === 'dashboard') {
-      if (!user) {
+      if (!user && !isPasswordRecovery) {
         setCurrentView('auth');
       } else {
         setDashboardTab('dashboard');
@@ -109,6 +109,11 @@ function MainApp() {
     setCurrentView('landing');
   };
 
+  // If password recovery link was clicked from email, show AuthPage (Reset Form)
+  if (isPasswordRecovery) {
+    return <AuthPage onNavigate={handleNavigate} />;
+  }
+
   return (
     <>
       {currentView === 'auth' && !user && <AuthPage onNavigate={handleNavigate} />}
@@ -120,7 +125,7 @@ function MainApp() {
           onLogout={handleLogout}
         />
       )}
-      {currentView === 'landing' && <LandingPage onNavigate={handleNavigate} />}
+      {(currentView === 'landing' || (currentView === 'auth' && user)) && <LandingPage onNavigate={handleNavigate} />}
       
       {/* Global Upgrade Modal */}
       <UpgradeModal isOpen={upgradeModalOpen} onClose={() => setUpgradeModalOpen(false)} />
