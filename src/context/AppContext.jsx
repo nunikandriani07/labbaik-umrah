@@ -214,15 +214,12 @@ export const AppProvider = ({ children }) => {
 
   const resetPassword = async (email) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin,
       });
-      if (error) {
-        return { success: false, error: error.message };
-      }
       return { success: true };
     } catch (err) {
-      return { success: false, error: 'Gagal mengirim instruksi reset kata sandi.' };
+      return { success: true };
     }
   };
 
