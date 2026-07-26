@@ -164,7 +164,6 @@ export const AppProvider = ({ children }) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Return strict error message when password or email is incorrect
         return { 
           success: false, 
           error: error.message === 'Invalid login credentials' 
@@ -210,6 +209,20 @@ export const AppProvider = ({ children }) => {
       return { success: true, user: u };
     } catch (err) {
       return { success: false, error: 'Gagal mendaftar. Silakan coba lagi.' };
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: 'Gagal mengirim instruksi reset kata sandi.' };
     }
   };
 
@@ -285,7 +298,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       user, setUser,
       session,
-      loginUser, registerUser, logoutUser,
+      loginUser, registerUser, resetPassword, logoutUser,
       isPremium, setIsPremium, unlockPremium,
       upgradeModalOpen, setUpgradeModalOpen,
       departureDate, setDepartureDate,
