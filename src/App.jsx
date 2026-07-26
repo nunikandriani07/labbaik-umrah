@@ -69,13 +69,30 @@ function MainApp() {
   const { user, logoutUser } = useApp();
 
   const handleNavigate = (view) => {
-    if (view.startsWith('dashboard-')) {
-      const tab = view.replace('dashboard-', '');
-      setDashboardTab(tab);
-      setCurrentView('dashboard');
+    if (view === 'auth') {
+      if (user) {
+        // If already logged in, redirect directly to dashboard
+        setCurrentView('dashboard');
+      } else {
+        setCurrentView('auth');
+      }
+    } else if (view.startsWith('dashboard-')) {
+      if (!user) {
+        // If not logged in, protect route and go to auth
+        setCurrentView('auth');
+      } else {
+        const tab = view.replace('dashboard-', '');
+        setDashboardTab(tab);
+        setCurrentView('dashboard');
+      }
     } else if (view === 'dashboard') {
-      setDashboardTab('dashboard');
-      setCurrentView('dashboard');
+      if (!user) {
+        // If not logged in, protect route and go to auth
+        setCurrentView('auth');
+      } else {
+        setDashboardTab('dashboard');
+        setCurrentView('dashboard');
+      }
     } else {
       setCurrentView(view);
     }
@@ -86,11 +103,8 @@ function MainApp() {
     setCurrentView('landing');
   };
 
-  if (currentView === 'auth') {
-    return <AuthPage onNavigate={handleNavigate} />;
-  }
-
-  if (currentView === 'dashboard') {
+  // Guard view state against auth changes
+  if (currentView === 'auth' && user) {
     return (
       <DashboardContainer
         activeTab={dashboardTab}
@@ -99,6 +113,24 @@ function MainApp() {
         onLogout={handleLogout}
       />
     );
+  }
+
+  if (currentView === 'dashboard') {
+    if (!user) {
+      return <AuthPage onNavigate={handleNavigate} />;
+    }
+    return (
+      <DashboardContainer
+        activeTab={dashboardTab}
+        onSelectTab={(tab) => setDashboardTab(tab)}
+        onNavigateHome={() => setCurrentView('landing')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (currentView === 'auth') {
+    return <AuthPage onNavigate={handleNavigate} />;
   }
 
   return <LandingPage onNavigate={handleNavigate} />;
