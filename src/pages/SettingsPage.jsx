@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Bell, Download, Shield, Save, CheckCircle } from 'lucide-react';
+import { User, Bell, Download, Shield, Save, CheckCircle, Lock } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, setUser, departureDate, setDepartureDate } = useApp();
+  const { user, setUser, departureDate, setDepartureDate, isPremium, setUpgradeModalOpen } = useApp();
 
   const [name, setName] = useState(user?.name || '');
   const [city, setCity] = useState(user?.city || 'Jakarta');
@@ -18,6 +18,11 @@ export default function SettingsPage() {
   };
 
   const handleDownloadOfflineBundle = () => {
+    if (!isPremium) {
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setDownloading(true);
     setTimeout(() => {
       setDownloading(false);
@@ -88,8 +93,8 @@ export default function SettingsPage() {
                 : 'bg-[#0D4A28] text-[#C9A84C] hover:bg-[#1B6B3A]'
             }`}
           >
-            <Download className="w-4 h-4" />
-            <span>{downloading ? 'Mengunduh Konten...' : downloaded ? 'Konten Offline Siap ✅' : 'Download Paket Offline (12 MB)'}</span>
+            {isPremium ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            <span>{downloading ? 'Mengunduh Konten...' : downloaded ? 'Konten Offline Siap ✅' : isPremium ? 'Download Paket Offline (12 MB)' : 'Buka Akses Offline (Premium)'}</span>
           </button>
         </div>
 
