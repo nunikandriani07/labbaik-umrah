@@ -1,19 +1,45 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Mail, Lock, User, ShieldCheck } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2 } from 'lucide-react';
 
-export default function AuthPage({ onNavigate, onLoginSuccess }) {
+export default function AuthPage({ onNavigate }) {
+  const { loginUser, registerUser } = useApp();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLoginSuccess({
-      name: name || 'Jamaah Umroh',
-      email: email || 'jamaah@labbaik.id',
-      city: 'Jakarta'
-    });
+    setLoading(true);
+    setErrorMessage('');
+
+    if (isRegister) {
+      const res = await registerUser(name, email, password);
+      setLoading(false);
+      if (res.success) {
+        onNavigate('dashboard');
+      } else {
+        setErrorMessage(res.error || 'Gagal mendaftar. Silakan coba lagi.');
+      }
+    } else {
+      const res = await loginUser(email, password);
+      setLoading(false);
+      if (res.success) {
+        onNavigate('dashboard');
+      } else {
+        setErrorMessage(res.error || 'Gagal masuk. Periksa email & kata sandi.');
+      }
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    // Instant demo OAuth login
+    await loginUser('jamaah.google@gmail.com', 'demo12345');
+    setLoading(false);
     onNavigate('dashboard');
   };
 
@@ -77,16 +103,23 @@ export default function AuthPage({ onNavigate, onLoginSuccess }) {
 
               <button
                 type="button"
-                onClick={() => setIsRegister(!isRegister)}
+                onClick={() => { setIsRegister(!isRegister); setErrorMessage(''); }}
                 className="text-xs font-bold text-[#1B6B3A] hover:underline"
               >
                 {isRegister ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
               </button>
             </div>
 
-            {/* Google OAuth Mock Button */}
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-semibold">
+                ⚠️ {errorMessage}
+              </div>
+            )}
+
+            {/* Google OAuth Button */}
             <button
-              onClick={handleSubmit}
+              onClick={handleGoogleAuth}
+              disabled={loading}
               className="w-full py-3 rounded-2xl bg-white border border-slate-200 hover:border-[#C9A84C] font-semibold text-xs text-slate-700 shadow-xs flex items-center justify-center gap-3 transition"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -154,15 +187,17 @@ export default function AuthPage({ onNavigate, onLoginSuccess }) {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl bg-[#1B6B3A] hover:bg-[#0D4A28] text-white font-bold text-sm shadow-md border border-[#C9A84C]/40 transition hover:scale-[1.01]"
+                disabled={loading}
+                className="w-full py-3.5 rounded-2xl bg-[#1B6B3A] hover:bg-[#0D4A28] text-white font-bold text-sm shadow-md border border-[#C9A84C]/40 transition hover:scale-[1.01] flex items-center justify-center gap-2"
               >
-                {isRegister ? 'Mulai Persiapan — Gratis' : 'Masuk ke Aplikasi'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                <span>{isRegister ? 'Mulai Persiapan — Gratis' : 'Masuk ke Aplikasi'}</span>
               </button>
             </form>
           </div>
 
           <div className="pt-4 text-center text-[11px] text-slate-400">
-            🔒 Data pribadi aman & terenkripsi selamanya.
+            🔒 Terhubung dengan Supabase Auth & terenkripsi selamanya.
           </div>
         </div>
       </div>
