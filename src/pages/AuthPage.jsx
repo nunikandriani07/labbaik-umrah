@@ -3,10 +3,15 @@ import { useApp } from '../context/AppContext';
 import { ArrowLeft, Mail, Lock, User, ShieldCheck, Loader2, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
 
 export default function AuthPage({ onNavigate }) {
-  const { loginUser, registerUser, resetPassword, setUser } = useApp();
-  const [mode, setMode] = useState('login'); // 'login', 'register', 'forgot'
+  const { 
+    loginUser, registerUser, resetPassword, updateUserPassword, 
+    setUser, isPasswordRecovery, setIsPasswordRecovery 
+  } = useApp();
+
+  const [mode, setMode] = useState(isPasswordRecovery ? 'reset' : 'login'); // 'login', 'register', 'forgot', 'reset'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,7 +24,26 @@ export default function AuthPage({ onNavigate }) {
     setErrorMessage('');
     setResetSuccessMessage('');
 
-    if (mode === 'forgot') {
+    if (mode === 'reset' || isPasswordRecovery) {
+      if (password.length < 6) {
+        setLoading(false);
+        setErrorMessage('Kata sandi minimal 6 karakter.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setLoading(false);
+        setErrorMessage('Konfirmasi kata sandi tidak cocok.');
+        return;
+      }
+      const res = await updateUserPassword(password);
+      setLoading(false);
+      if (res.success) {
+        setIsPasswordRecovery(false);
+        onNavigate('dashboard');
+      } else {
+        setErrorMessage(res.error || 'Gagal memperbarui kata sandi.');
+      }
+    } else if (mode === 'forgot') {
       const res = await resetPassword(email);
       setLoading(false);
       if (res.success) {
@@ -62,6 +86,8 @@ export default function AuthPage({ onNavigate }) {
       onNavigate('dashboard');
     }, 600);
   };
+
+  const activeMode = isPasswordRecovery ? 'reset' : mode;
 
   return (
     <div className="min-h-screen bg-[#FBF7F0] flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
@@ -114,25 +140,34 @@ export default function AuthPage({ onNavigate }) {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-black text-[#0D4A28]">
-                  {mode === 'forgot' 
-                    ? 'Lupa Kata Sandi' 
-                    : mode === 'register' 
-                      ? 'Buat Akun Jamaah' 
-                      : 'Selamat Datang Kembali'}
+                  {activeMode === 'reset'
+                    ? 'Buat Kata Sandi Baru'
+                    : activeMode === 'forgot' 
+                      ? 'Lupa Kata Sandi' 
+                      : activeMode === 'register' 
+                        ? 'Buat Akun Jamaah' 
+                        : 'Selamat Datang Kembali'}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  {mode === 'forgot'
-                    ? 'Masukkan email untuk menerima tautan pemulihan kata sandi'
-                    : mode === 'register' 
-                      ? 'Daftar gratis untuk mulai merencanakan umroh' 
-                      : 'Masuk untuk mengakses panduan & simpanan doa'}
+                  {activeMode === 'reset'
+                    ? 'Masukkan kata sandi baru untuk akun Anda'
+                    : activeMode === 'forgot'
+                      ? 'Masukkan email untuk menerima tautan pemulihan kata sandi'
+                      : activeMode === 'register' 
+                        ? 'Daftar gratis untuk mulai merencanakan umroh' 
+                        : 'Masuk untuk mengakses panduan & simpanan doa'}
                 </p>
               </div>
 
-              {mode === 'forgot' ? (
+              {activeMode === 'forgot' || activeMode === 'reset' ? (
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setErrorMessage(''); setResetSuccessMessage(''); }}
+                  onClick={() => { 
+                    setIsPasswordRecovery(false); 
+                    setMode('login'); 
+                    setErrorMessage(''); 
+                    setResetSuccessMessage(''); 
+                  }}
                   className="text-xs font-bold text-[#1B6B3A] hover:underline"
                 >
                   Kembali ke Masuk
@@ -141,13 +176,13 @@ export default function AuthPage({ onNavigate }) {
                 <button
                   type="button"
                   onClick={() => { 
-                    setMode(mode === 'register' ? 'login' : 'register'); 
+                    setMode(activeMode === 'register' ? 'login' : 'register'); 
                     setErrorMessage(''); 
                     setResetSuccessMessage(''); 
                   }}
                   className="text-xs font-bold text-[#1B6B3A] hover:underline"
                 >
-                  {mode === 'register' ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
+                  {activeMode === 'register' ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}
                 </button>
               )}
             </div>
@@ -166,8 +201,8 @@ export default function AuthPage({ onNavigate }) {
               </div>
             )}
 
-            {/* Google OAuth Button (Shown only on login / register) */}
-            {mode !== 'forgot' && (
+            {/* Google OAuth Button */}
+            {activeMode !== 'forgot' && activeMode !== 'reset' && (
               <>
                 <button
                   type="button"
@@ -195,9 +230,9 @@ export default function AuthPage({ onNavigate }) {
               </>
             )}
 
-            {/* Email Form */}
+            {/* Email & Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'register' && (
+              {activeMode === 'register' && (
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Nama Lengkap Jamaah</label>
                   <div className="relative">
@@ -214,27 +249,68 @@ export default function AuthPage({ onNavigate }) {
                 </div>
               )}
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Alamat Email Jamaah</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@jamaah.id"
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
-                  />
+              {activeMode !== 'reset' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Alamat Email Jamaah</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="nama@jamaah.id"
+                      className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Password Field (Hidden during Forgot Password) */}
-              {mode !== 'forgot' && (
+              {/* Reset Password Fields */}
+              {activeMode === 'reset' ? (
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Kata Sandi Baru</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Minimal 6 karakter"
+                        className="w-full pl-10 pr-12 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Konfirmasi Kata Sandi Baru</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Ulangi kata sandi baru"
+                        className="w-full pl-10 pr-12 py-3 rounded-2xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#C9A84C]"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : activeMode !== 'forgot' && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-700">Kata Sandi</label>
-                    {mode === 'login' && (
+                    {activeMode === 'login' && (
                       <button
                         type="button"
                         onClick={() => { setMode('forgot'); setErrorMessage(''); setResetSuccessMessage(''); }}
@@ -273,11 +349,13 @@ export default function AuthPage({ onNavigate }) {
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin text-[#C9A84C]" /> : null}
                 <span>
-                  {mode === 'forgot'
-                    ? 'Kirim Instruksi Reset 📩'
-                    : mode === 'register' 
-                      ? 'Mulai Persiapan — Gratis' 
-                      : 'Masuk ke Aplikasi'}
+                  {activeMode === 'reset'
+                    ? 'Simpan Kata Sandi Baru 🔒'
+                    : activeMode === 'forgot'
+                      ? 'Kirim Instruksi Reset 📩'
+                      : activeMode === 'register' 
+                        ? 'Mulai Persiapan — Gratis' 
+                        : 'Masuk ke Aplikasi'}
                 </span>
               </button>
             </form>
