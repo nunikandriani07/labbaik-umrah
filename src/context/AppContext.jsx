@@ -159,14 +159,18 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('labbaik_is_premium', 'true');
   };
 
-  // Auth Methods
+  // Auth Methods - Strict Password Validation
   const loginUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        const mockUser = { name: email.split('@')[0] || 'Jamaah Umroh', email, city: 'Jakarta' };
-        setUser(mockUser);
-        return { success: true, user: mockUser };
+        // Return strict error message when password or email is incorrect
+        return { 
+          success: false, 
+          error: error.message === 'Invalid login credentials' 
+            ? 'Email atau kata sandi yang Anda masukkan salah.' 
+            : error.message 
+        };
       }
       const u = {
         id: data.user.id,
@@ -177,9 +181,7 @@ export const AppProvider = ({ children }) => {
       setUser(u);
       return { success: true, user: u };
     } catch (err) {
-      const mockUser = { name: email.split('@')[0] || 'Jamaah Umroh', email, city: 'Jakarta' };
-      setUser(mockUser);
-      return { success: true, user: mockUser };
+      return { success: false, error: 'Terjadi kesalahan koneksi. Silakan coba lagi.' };
     }
   };
 
@@ -192,8 +194,14 @@ export const AppProvider = ({ children }) => {
           data: { name, city: 'Jakarta' }
         }
       });
+      if (error) {
+        return { success: false, error: error.message };
+      }
+      if (!data.user) {
+        return { success: false, error: 'Gagal membuat akun baru.' };
+      }
       const u = {
-        id: data.user?.id || 'demo-id',
+        id: data.user.id,
         name: name || 'Jamaah Umroh',
         email,
         city: 'Jakarta'
@@ -201,9 +209,7 @@ export const AppProvider = ({ children }) => {
       setUser(u);
       return { success: true, user: u };
     } catch (err) {
-      const u = { name: name || 'Jamaah Umroh', email, city: 'Jakarta' };
-      setUser(u);
-      return { success: true, user: u };
+      return { success: false, error: 'Gagal mendaftar. Silakan coba lagi.' };
     }
   };
 
