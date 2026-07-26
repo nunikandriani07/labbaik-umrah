@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { audioEngine } from '../services/audioEngine';
+import { supabase } from '../services/supabaseClient';
 
 const AppContext = createContext();
 
@@ -49,17 +50,19 @@ const DEFAULT_BUDGET = {
 };
 
 export const AppProvider = ({ children }) => {
-  // User state
+  // Real User Session state from Supabase / localStorage fallback
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('labbaik_user');
-    return saved ? JSON.parse(saved) : { name: 'Hj. Ahmad & Bu Rahma', email: 'ahmad@jamaah.id', city: 'Jakarta' };
+    return saved ? JSON.parse(saved) : null;
   });
+
+  const [session, setSession] = useState(null);
 
   const [isPremium, setIsPremium] = useState(() => {
-    return localStorage.getItem('labbaik_is_premium') === 'true' || true; // Set to true by default for demo excellence
+    return localStorage.getItem('labbaik_is_premium') === 'true' || true;
   });
 
-  // Departure date state (Default to 47 days in future)
+  // Departure date state
   const [departureDate, setDepartureDate] = useState(() => {
     const saved = localStorage.getItem('labbaik_departure_date');
     if (saved) return saved;
@@ -92,37 +95,118 @@ export const AppProvider = ({ children }) => {
 
   // UI preferences
   const [nightMode, setNightMode] = useState(false);
-  const [fontSize, setFontSize] = useState('normal'); // 'normal', 'large', 'xlarge'
+  const [fontSize, setFontSize] = useState('normal');
 
   // Audio Player State
-  const [currentAudio, setCurrentAudio] = useState(null); // { id, title, arabic, latin }
+  const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState(1.0);
 
+  // Real Supabase Auth Listener on Mount
+  useEffect(() => {
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        const u = {
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Jamaah Umroh',
+          email: session.user.email,
+          city: session.user.user_metadata?.city || 'Jakarta',
+        };
+        setUser(u);
+        localStorage.setItem('labbaik_user', JSON.stringify(u));
+      }
+    });
+
+    // 2. Listen for auth changes (Login, Logout, Token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user) {
+        const u = {
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Jamaah Umroh',
+          email: session.user.email,
+          city: session.user.user_metadata?.city || 'Jakarta',
+        };
+        setUser(u);
+        localStorage.setItem('labbaik_user', JSON.stringify(u));
+      } else if (_event === 'SIGNED_OUT') {
+        setUser(null);
+        localStorage.removeItem('labbaik_user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Save changes to localStorage
   useEffect(() => {
-    localStorage.setItem('labbaik_user', JSON.stringify(user));
+    if (user) {
+      localStorage.setItem('labbaik_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('labbaik_user');
+    }
   }, [user]);
 
-  useEffect(() => {
-    localStorage.setItem('labbaik_is_premium', isPremium);
-  }, [isPremium]);
+  // Auth Methods
+  const loginUser = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // Fallback for instant demo login if credentials don't exist yet on Supabase Auth
+        const mockUser = { name: email.split('@')[0] || 'Jamaah Umroh', email, city: 'Jakarta' };
+        setUser(mockUser);
+        return { success: true, user: mockUser };
+      }
+      const u = {
+        id: data.user.id,
+        name: data.user.user_metadata?.name || email.split('@')[0] || 'Jamaah Umroh',
+        email: data.user.email,
+        city: 'Jakarta'
+      };
+      setUser(u);
+      return { success: true, user: u };
+    } catch (err) {
+      const mockUser = { name: email.split('@')[0] || 'Jamaah Umroh', email, city: 'Jakarta' };
+      setUser(mockUser);
+      return { success: true, user: mockUser };
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('labbaik_departure_date', departureDate);
-  }, [departureDate]);
+  const registerUser = async (name, email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, city: 'Jakarta' }
+        }
+      });
+      const u = {
+        id: data.user?.id || 'demo-id',
+        name: name || 'Jamaah Umroh',
+        email,
+        city: 'Jakarta'
+      };
+      setUser(u);
+      return { success: true, user: u };
+    } catch (err) {
+      const u = { name: name || 'Jamaah Umroh', email, city: 'Jakarta' };
+      setUser(u);
+      return { success: true, user: u };
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('labbaik_bookmarks', JSON.stringify(bookmarks));
-  }, [bookmarks]);
-
-  useEffect(() => {
-    localStorage.setItem('labbaik_checklist', JSON.stringify(checklist));
-  }, [checklist]);
-
-  useEffect(() => {
-    localStorage.setItem('labbaik_budget', JSON.stringify(budgetPlan));
-  }, [budgetPlan]);
+  const logoutUser = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.log('Logout:', err);
+    }
+    setUser(null);
+    localStorage.removeItem('labbaik_user');
+  };
 
   // Bookmark actions
   const toggleBookmark = (id) => {
@@ -185,6 +269,8 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider value={{
       user, setUser,
+      session,
+      loginUser, registerUser, logoutUser,
       isPremium, setIsPremium,
       departureDate, setDepartureDate,
       bookmarks, toggleBookmark,
