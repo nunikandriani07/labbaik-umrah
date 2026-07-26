@@ -1,0 +1,113 @@
+import React, { useState } from 'react';
+import { AppProvider, useApp } from './context/AppContext';
+import LandingPage from './pages/LandingPage';
+import AuthPage from './pages/AuthPage';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import AudioPlayerBar from './components/AudioPlayerBar';
+
+// Subpages
+import DashboardHome from './pages/DashboardHome';
+import PanduanPage from './pages/PanduanPage';
+import BankDoaPage from './pages/BankDoaPage';
+import PerencanaanPage from './pages/PerencanaanPage';
+import SpotFotoPage from './pages/SpotFotoPage';
+import PanduanPraktisPage from './pages/PanduanPraktisPage';
+import TrackerPage from './pages/TrackerPage';
+import SettingsPage from './pages/SettingsPage';
+
+function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }) {
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardHome onSelectTab={onSelectTab} />;
+      case 'panduan':
+        return <PanduanPage />;
+      case 'doa':
+        return <BankDoaPage />;
+      case 'perencanaan':
+        return <PerencanaanPage />;
+      case 'spot-foto':
+        return <SpotFotoPage />;
+      case 'praktis':
+        return <PanduanPraktisPage />;
+      case 'tracker':
+        return <TrackerPage />;
+      case 'settings':
+        return <SettingsPage />;
+      default:
+        return <DashboardHome onSelectTab={onSelectTab} />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FBF7F0] flex">
+      {/* Sidebar Navigation */}
+      <Sidebar
+        currentTab={activeTab}
+        onSelectTab={onSelectTab}
+        onLogout={onLogout}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto h-screen">
+        <Header currentTab={activeTab} onNavigateHome={onNavigateHome} />
+        <main className="p-6 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
+          {renderTabContent()}
+        </main>
+      </div>
+
+      {/* Sticky Audio Player Bar */}
+      <AudioPlayerBar />
+    </div>
+  );
+}
+
+function MainApp() {
+  const [currentView, setCurrentView] = useState('landing'); // 'landing', 'auth', 'dashboard-*'
+  const [dashboardTab, setDashboardTab] = useState('dashboard');
+  const { setUser } = useApp();
+
+  const handleNavigate = (view) => {
+    if (view.startsWith('dashboard-')) {
+      const tab = view.replace('dashboard-', '');
+      setDashboardTab(tab);
+      setCurrentView('dashboard');
+    } else if (view === 'dashboard') {
+      setDashboardTab('dashboard');
+      setCurrentView('dashboard');
+    } else {
+      setCurrentView(view);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setCurrentView('landing');
+  };
+
+  if (currentView === 'auth') {
+    return <AuthPage onNavigate={handleNavigate} onLoginSuccess={(u) => setUser(u)} />;
+  }
+
+  if (currentView === 'dashboard') {
+    return (
+      <DashboardContainer
+        activeTab={dashboardTab}
+        onSelectTab={(tab) => setDashboardTab(tab)}
+        onNavigateHome={() => setCurrentView('landing')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  return <LandingPage onNavigate={handleNavigate} />;
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <MainApp />
+    </AppProvider>
+  );
+}
