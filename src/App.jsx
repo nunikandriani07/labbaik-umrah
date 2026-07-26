@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AudioPlayerBar from './components/AudioPlayerBar';
+import UpgradeModal from './components/UpgradeModal';
 
 // Subpages
 import DashboardHome from './pages/DashboardHome';
@@ -66,19 +67,17 @@ function DashboardContainer({ activeTab, onSelectTab, onNavigateHome, onLogout }
 function MainApp() {
   const [currentView, setCurrentView] = useState('landing');
   const [dashboardTab, setDashboardTab] = useState('dashboard');
-  const { user, logoutUser } = useApp();
+  const { user, logoutUser, upgradeModalOpen, setUpgradeModalOpen } = useApp();
 
   const handleNavigate = (view) => {
     if (view === 'auth') {
       if (user) {
-        // If already logged in, redirect directly to dashboard
         setCurrentView('dashboard');
       } else {
         setCurrentView('auth');
       }
     } else if (view.startsWith('dashboard-')) {
       if (!user) {
-        // If not logged in, protect route and go to auth
         setCurrentView('auth');
       } else {
         const tab = view.replace('dashboard-', '');
@@ -87,7 +86,6 @@ function MainApp() {
       }
     } else if (view === 'dashboard') {
       if (!user) {
-        // If not logged in, protect route and go to auth
         setCurrentView('auth');
       } else {
         setDashboardTab('dashboard');
@@ -103,37 +101,23 @@ function MainApp() {
     setCurrentView('landing');
   };
 
-  // Guard view state against auth changes
-  if (currentView === 'auth' && user) {
-    return (
-      <DashboardContainer
-        activeTab={dashboardTab}
-        onSelectTab={(tab) => setDashboardTab(tab)}
-        onNavigateHome={() => setCurrentView('landing')}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (currentView === 'dashboard') {
-    if (!user) {
-      return <AuthPage onNavigate={handleNavigate} />;
-    }
-    return (
-      <DashboardContainer
-        activeTab={dashboardTab}
-        onSelectTab={(tab) => setDashboardTab(tab)}
-        onNavigateHome={() => setCurrentView('landing')}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
-  if (currentView === 'auth') {
-    return <AuthPage onNavigate={handleNavigate} />;
-  }
-
-  return <LandingPage onNavigate={handleNavigate} />;
+  return (
+    <>
+      {currentView === 'auth' && !user && <AuthPage onNavigate={handleNavigate} />}
+      {currentView === 'dashboard' && user && (
+        <DashboardContainer
+          activeTab={dashboardTab}
+          onSelectTab={(tab) => setDashboardTab(tab)}
+          onNavigateHome={() => setCurrentView('landing')}
+          onLogout={handleLogout}
+        />
+      )}
+      {currentView === 'landing' && <LandingPage onNavigate={handleNavigate} />}
+      
+      {/* Global Upgrade Modal */}
+      <UpgradeModal isOpen={upgradeModalOpen} onClose={() => setUpgradeModalOpen(false)} />
+    </>
+  );
 }
 
 export default function App() {
