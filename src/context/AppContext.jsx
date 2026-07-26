@@ -58,9 +58,12 @@ export const AppProvider = ({ children }) => {
 
   const [session, setSession] = useState(null);
 
+  // Premium status (Defaults to false for free users)
   const [isPremium, setIsPremium] = useState(() => {
-    return localStorage.getItem('labbaik_is_premium') === 'true' || true;
+    return localStorage.getItem('labbaik_is_premium') === 'true';
   });
+
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   // Departure date state
   const [departureDate, setDepartureDate] = useState(() => {
@@ -104,7 +107,6 @@ export const AppProvider = ({ children }) => {
 
   // Real Supabase Auth Listener on Mount
   useEffect(() => {
-    // 1. Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -119,7 +121,6 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    // 2. Listen for auth changes (Login, Logout, Token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
@@ -149,12 +150,20 @@ export const AppProvider = ({ children }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    localStorage.setItem('labbaik_is_premium', isPremium ? 'true' : 'false');
+  }, [isPremium]);
+
+  const unlockPremium = () => {
+    setIsPremium(true);
+    localStorage.setItem('labbaik_is_premium', 'true');
+  };
+
   // Auth Methods
   const loginUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Fallback for instant demo login if credentials don't exist yet on Supabase Auth
         const mockUser = { name: email.split('@')[0] || 'Jamaah Umroh', email, city: 'Jakarta' };
         setUser(mockUser);
         return { success: true, user: mockUser };
@@ -271,7 +280,8 @@ export const AppProvider = ({ children }) => {
       user, setUser,
       session,
       loginUser, registerUser, logoutUser,
-      isPremium, setIsPremium,
+      isPremium, setIsPremium, unlockPremium,
+      upgradeModalOpen, setUpgradeModalOpen,
       departureDate, setDepartureDate,
       bookmarks, toggleBookmark,
       checklist, toggleChecklist,
